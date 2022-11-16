@@ -563,7 +563,7 @@ namespace leantime\domain\repositories {
          * @param $ticketId
          * @return array
          */
-        public function getLoggedHoursForTicket($ticketId)
+        public function getLoggedHoursForTicket($ticketId,$include_substasks = true)
         {
 
             $query = "SELECT
@@ -575,8 +575,13 @@ namespace leantime\domain\repositories {
 			FROM 
 				zp_timesheets 
 			WHERE 
-				zp_timesheets.ticketId = :ticketId
-			GROUP BY DATE_FORMAT(zp_timesheets.workDate, '%Y-%m-%d')
+				zp_timesheets.ticketId = :ticketId ";
+				
+				if($include_substasks)
+					$query .=" OR zp_timesheets.ticketId IN (SELECT zp_tickets.id FROM zp_tickets WHERE zp_tickets.dependingTicketId = :ticketId AND zp_tickets.type = 'subtask')";
+				
+				$query.="
+                GROUP BY DATE_FORMAT(zp_timesheets.workDate, '%Y-%m-%d')
 			ORDER BY utc
 			";
 
