@@ -36,6 +36,7 @@
 $sumPlanHours = 0;
 $sumEstHours = 0;
 foreach($this->get('allSubTasks') as $subticket) {
+
 $sumPlanHours = $sumPlanHours + $subticket['planHours'];
 $sumEstHours = $sumEstHours + $subticket['hourRemaining'];
 
@@ -68,22 +69,38 @@ $sumEstHours = $sumEstHours + $subticket['hourRemaining'];
                 </div>
             </div>
             <div class="row">
-                <div class="col-md-9" style="padding:0 15px;">
+                <div class="col-md-10" style="padding:0 15px;">
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-2">
                             <?php echo $this->__("label.due"); ?><input type="text" title="<?php echo $this->__("label.due"); ?>" value="<?php echo $date ?>" class="duedates secretInput quickDueDates" data-id="<?php echo $subticket['id'];?>" name="date" />
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-2">
                             <?php echo $this->__("label.planned_hours"); ?><input type="text" value="<?php echo $this->e($subticket['planHours']); ?>" name="planHours" data-label="planHours-<?=$subticket['id']?>" class="small-input secretInput asyncInputUpdate" style="width:40px"/>
                         </div>
-                        <div class="col-md-4">
+						<div class="col-md-2">
+						<?php echo $this->__('label.booked_hours') ?>: <?php echo $subticket['timesheetAllHours']; ?><br />
+						</div>
+                        <div class="col-md-3">
                             <?php echo $this->__("label.estimated_hours_remaining"); ?><input type="text" value="<?php echo $this->e($subticket['hourRemaining']); ?>" name="hourRemaining" data-label="hourRemaining-<?=$subticket['id']?>" class="small-input secretInput asyncInputUpdate" style="width:40px"/>
                         </div>
+                        <div class="col-md-3">
+							<div class="timerContainer">
+								<?php $clockedIn = $this->get("onTheClock"); 
+									//echo print_r($subticket,true);
+								//echo print_r($clockedIn,true);
+								?>
+								<a class="punchIn" href="javascript:void(0);" data-value="<?php echo $subticket["id"]; ?>" <?php if($clockedIn !== false) { echo"style='display:none;'"; }?>><span class="iconfa-time"></span> <?php echo $this->__("links.start_work"); ?></a>
+								<a class="punchOut" href="javascript:void(0);" data-value="<?php echo $subticket["id"]; ?>" <?php if($clockedIn === false || $clockedIn["id"] != $subticket["id"]) { echo"style='display:none;'"; }?>><span class="iconfa-stop"></span> <?php if(is_array($clockedIn) == true) { echo $clockedIn['totalTime'];}/*echo sprintf($this->__("links.stop_work_started_at"), date('j/m/y H:i:s', $clockedIn["since"]));} echo date('H:i:s',time());*/ ?></a>
+								<span class='working' <?php if($clockedIn === false || $clockedIn["id"] === $subticket["id"]) { echo"style='display:none;'"; }?>><?php echo $this->__("text.timer_set_other_todo"); ?></span>
+							</div>
+						</div>
                     </div>
                 </div>
-                <div class="col-md-3" style="padding-top:3px;" >
+                <div class="col-md-2" style="padding-top:3px;" >
                     <div class="right">
-                        <div class="dropdown ticketDropdown effortDropdown show">
+                                         
+            
+                            <div class="dropdown ticketDropdown effortDropdown show">
                             <a class="dropdown-toggle f-left  label-default effort" href="javascript:void(0);" role="button" id="effortDropdownMenuLink<?=$subticket['id']?>" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                                 <span class="text"><?php
                                                                     if($subticket['storypoints'] != '' && $subticket['storypoints'] > 0) {
@@ -132,3 +149,29 @@ $sumEstHours = $sumEstHours + $subticket['hourRemaining'];
 
 <?php } ?>
 </ul>
+<script>
+ jQuery(".punchIn").on("click", function () {
+                        var ticketId = jQuery(this).attr("data-value"),
+                            currentdate =
+                                (jQuery.ajax({ data: { ticketId: ticketId, action: "start" }, type: "POST", url: leantime.appUrl + "/api/timer" }).done(function (msg) {
+                                    jQuery.jGrowl(leantime.i18n.__("short_notifications.timer_started"));
+                                }),
+                                moment().format(leantime.i18n.__("language.jstimeformat")));
+                        jQuery(".timerContainer .punchIn").hide(),
+                            jQuery("#timerContainer-" + ticketId + " .punchOut").show(),
+                            jQuery(".timerContainer .working").show(),
+                            jQuery("#timerContainer-" + ticketId + " .working").hide(),
+                            jQuery("#timerContainer-" + ticketId + " span.time").text(currentdate);
+							 location.reload();
+                    });
+jQuery(".punchOut").on("click", function () {
+                            var ticketId = jQuery(this).attr("data-value");
+                            jQuery.ajax({ data: { ticketId: ticketId, action: "stop" }, type: "POST", url: leantime.appUrl + "/api/timer" }).done(function (hoursLogged) {
+                                0 == hoursLogged ? jQuery.jGrowl(leantime.i18n.__("short_notifications.not_enough_time_logged")) : jQuery.jGrowl(leantime.i18n.__("short_notifications.logged_x_hours").replace("%1$s", hoursLogged));
+                            }),
+                                jQuery(".timerContainer .punchIn").show(),
+                                jQuery(".timerContainer .punchOut").hide(),
+                                jQuery(".timerContainer .working").hide(),
+                                jQuery(".timerHeadMenu").hide("slow");
+                        });
+</script>

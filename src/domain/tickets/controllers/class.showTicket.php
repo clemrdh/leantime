@@ -39,6 +39,7 @@ namespace leantime\domain\controllers {
 
         public function get($params)
         {
+            $this->tpl->assign('onTheClock', $this->timesheetService->isClocked($_SESSION["userdata"]["id"]));
 
             if (isset($params['id']) === true) {
 
@@ -121,6 +122,11 @@ namespace leantime\domain\controllers {
                 $this->tpl->assign('comments', $comments);
 
                 $subTasks = $this->ticketService->getAllSubtasks($id);
+                foreach($subTasks as $ks=>$vs)
+				{
+					$subTasks[$ks]['timesheetAllHours'] = $this->timesheetService->getSumLoggedHoursForTicket($vs['id']);
+					$subTasks[$ks]['remainingHours'] = $this->timesheetService->getRemainingHours($this->ticketService->getTicket($vs['id']));
+				}
                 $this->tpl->assign('numSubTasks', count($subTasks));
                 $this->tpl->assign('allSubTasks', $subTasks);
 
